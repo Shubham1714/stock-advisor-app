@@ -1,14 +1,8 @@
-// Pro Stock Advisor - app.js (Netlify Function version)
+// Stock Advisor - app.js (Netlify Function version)
 const q = s => document.querySelector(s);
 const symbolInput = q("#symbol");
 const checkBtn = q("#checkBtn");
 const summaryEl = q("#summary");
-const detailsEl = q("#details");
-const fundamentalsEl = q("#fundamentals");
-const technicalsEl = q("#technicals");
-const riskEl = q("#risk");
-const rawEl = q("#raw");
-const logSection = q("#log");
 
 function show(el){ el.classList.remove("hidden"); }
 function hide(el){ el.classList.add("hidden"); }
@@ -25,7 +19,7 @@ async function fetchQuote(symbol){
   const resp = await fetch(url);
   if(!resp.ok) throw new Error("Fetch failed: " + resp.status);
   const data = await resp.json();
-  return data.quote.quoteResponse.result[0];
+  return data.quote;
 }
 
 // Fetch chart via Netlify Function
@@ -34,7 +28,12 @@ async function fetchChart(symbol){
   const resp = await fetch(url);
   if(!resp.ok) throw new Error("Fetch failed: " + resp.status);
   const data = await resp.json();
-  return data.chart.chart.result[0];
+  // Convert historical chart to expected format
+  return {
+    indicators: {
+      quote: [{ close: data.chart.map(c => c.close) }]
+    }
+  };
 }
 
 // SMA
@@ -72,27 +71,6 @@ function rsi(values, period=14){
   return rsiArr;
 }
 
-// MACD
-function macd(values, short=12, long=26, signal=9){
-  const k = 2/(short+1);
-  const emaShort = ema(values, short);
-  const emaLong = ema(values, long);
-  const macdLine = values.map((v,i)=> (emaShort[i] && emaLong[i]) ? emaShort[i]-emaLong[i] : null);
-  return {macdLine, signalLine: macdLine}; // simplified
-}
-function ema(values, period){
-  const k = 2/(period+1);
-  const out = [];
-  let prev = values.slice(0, period).reduce((a,b)=>a+b,0)/period;
-  for(let i=0;i<values.length;i++){
-    if(i < period-1) { out.push(null); continue; }
-    if(i === period-1){ out.push(prev); continue; }
-    prev = values[i]*k + prev*(1-k);
-    out.push(prev);
-  }
-  return out;
-}
-
 // Weighted score
 function buildScore(fundPct, techPct, riskPct){
   return (fundPct*0.5) + (techPct*0.3) + (riskPct*0.2);
@@ -101,7 +79,7 @@ function buildScore(fundPct, techPct, riskPct){
 // Run analysis
 async function runAnalysis(symbol){
   try{
-    hide(summaryEl); hide(detailsEl); hide(logSection);
+    hide(summaryEl);
     summaryEl.innerHTML = "Fetching data...";
     show(summaryEl);
 
@@ -123,7 +101,6 @@ async function runAnalysis(symbol){
     if(pe && pe<25) { fundScore+=1; fundNote.push("P/E reasonable"); } else fundNote.push("P/E high/NA");
     if(pb && pb<4) { fundScore+=1; fundNote.push("P/B reasonable"); } else fundNote.push("P/B high/NA");
     fundNote.push("Manual check: debt & results");
-
     const fundPct = (fundScore/3)*100;
 
     // Technical checks
@@ -131,7 +108,6 @@ async function runAnalysis(symbol){
     if(lastClose && sma50 && lastClose>sma50){ techScore+=1; techNote.push("Price>SMA50"); } else techNote.push("Price<=SMA50");
     if(lastClose && sma200 && lastClose>sma200){ techScore+=1; techNote.push("Price>SMA200"); } else techNote.push("Price<=SMA200");
     if(lastRsi && lastRsi>30 && lastRsi<70){ techScore+=1; techNote.push("RSI neutral"); } else techNote.push("RSI extreme");
-
     const techPct = (techScore/3)*100;
 
     const finalScore = buildScore(fundPct, techPct, 50); // risk fixed 50%
@@ -152,4 +128,4 @@ async function runAnalysis(symbol){
     summaryEl.innerHTML=`<h2>Error</h2><p>${err.message}</p>`;
     show(summaryEl);
   }
-}
+       }
