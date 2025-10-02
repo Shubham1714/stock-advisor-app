@@ -1,6 +1,4 @@
-// Pro Stock Advisor - app.js (CORS fixed)
-const proxy = "https://corsproxy.io/?";
-
+// Pro Stock Advisor - app.js (Netlify Function version)
 const q = s => document.querySelector(s);
 const symbolInput = q("#symbol");
 const checkBtn = q("#checkBtn");
@@ -21,23 +19,22 @@ checkBtn.addEventListener("click", () => {
   runAnalysis(sym.toUpperCase());
 });
 
-// Helper fetch
-async function fetchJSON(url){
+// Fetch quote via Netlify Function
+async function fetchQuote(symbol){
+  const url = `/.netlify/functions/fetchStock?symbol=${symbol}`;
   const resp = await fetch(url);
   if(!resp.ok) throw new Error("Fetch failed: " + resp.status);
-  return resp.json();
+  const data = await resp.json();
+  return data.quote.quoteResponse.result[0];
 }
 
-// Fetch quote
-async function fetchQuote(symbol){
-  const url = proxy + `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`;
-  return fetchJSON(url);
-}
-
-// Fetch chart
-async function fetchChart(symbol, range='1y', interval='1d'){
-  const url = proxy + `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=${range}&interval=${interval}`;
-  return fetchJSON(url);
+// Fetch chart via Netlify Function
+async function fetchChart(symbol){
+  const url = `/.netlify/functions/fetchStock?symbol=${symbol}`;
+  const resp = await fetch(url);
+  if(!resp.ok) throw new Error("Fetch failed: " + resp.status);
+  const data = await resp.json();
+  return data.chart.chart.result[0];
 }
 
 // SMA
@@ -108,15 +105,12 @@ async function runAnalysis(symbol){
     summaryEl.innerHTML = "Fetching data...";
     show(summaryEl);
 
-    const [quoteJson, chartJson] = await Promise.all([
+    const [quote, chart] = await Promise.all([
       fetchQuote(symbol),
       fetchChart(symbol)
     ]);
-    const quote = quoteJson.quoteResponse.result[0];
-    if(!quote) throw new Error("No quote data");
-    const chart = chartJson.chart.result[0];
-    const closes = chart.indicators.quote[0].close;
 
+    const closes = chart.indicators.quote[0].close;
     const lastClose = closes[closes.length-1];
     const sma50 = sma(closes,50).slice(-1)[0];
     const sma200 = sma(closes,200).slice(-1)[0];
