@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pro Stock Advisor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Pro Stock Advisor</h1>
+    <p>Enter NSE/BSE ticker (e.g., <code>RPOWER.NS</code>, <code>RELIANCE.NS</code>)</p>
+  </header>
+
+  <main>
+    <div class="controls">
+      <input id="symbol" placeholder="Enter ticker (e.g. RPOWER.NS)" />
+      <button id="checkBtn">Check Stock</button>
+    </div>
+
+    <section id="summary" class="card hidden"></section>
+    <section id="details" class="card hidden">
+      <h3>Details</h3>
+      <div id="fundamentals"></div>
+      <div id="technicals"></div>
+      <div id="risk"></div>
+    </section>
+    <section id="log" class="card hidden"><h3>Notes & raw</h3><pre id="raw"></pre></section>
+  </main>
+
+  <footer>Built for you — Pro checks: P/E, P/B, 52W, RSI, SMA50/200, MACD, volume & scoring.</footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
