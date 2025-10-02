@@ -1,24 +1,22 @@
-// Netlify function to fetch Yahoo Finance data
-const fetch = require("node-fetch");
+// functions/fetchStock.js
+const yahooFinance = require("yahoo-finance2").default;
 
 exports.handler = async function(event, context) {
-  const symbol = event.queryStringParameters.symbol;
-  if(!symbol) {
-    return { statusCode: 400, body: "Symbol missing" };
+  const symbol = event.queryStringParameters?.symbol;
+  if(!symbol){
+    return { statusCode: 400, body: JSON.stringify({error: "Symbol missing"}) };
   }
 
   try {
     // Fetch quote
-    const quoteResp = await fetch(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`);
-    const quoteJson = await quoteResp.json();
+    const quote = await yahooFinance.quote(symbol);
 
-    // Fetch chart (1 year daily)
-    const chartResp = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=1y&interval=1d`);
-    const chartJson = await chartResp.json();
+    // Fetch historical chart (1 year daily)
+    const chart = await yahooFinance.historical(symbol, { period1: "1y", interval: "1d" });
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ quote: quoteJson, chart: chartJson })
+      body: JSON.stringify({ quote, chart })
     };
   } catch(err) {
     return {
