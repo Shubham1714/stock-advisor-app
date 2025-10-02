@@ -1,4 +1,6 @@
-// Pro Stock Advisor - app.js
+// Pro Stock Advisor - app.js (CORS fixed)
+const proxy = "https://corsproxy.io/?";
+
 const q = s => document.querySelector(s);
 const symbolInput = q("#symbol");
 const checkBtn = q("#checkBtn");
@@ -28,13 +30,13 @@ async function fetchJSON(url){
 
 // Fetch quote
 async function fetchQuote(symbol){
-  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`;
+  const url = proxy + `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`;
   return fetchJSON(url);
 }
 
 // Fetch chart
 async function fetchChart(symbol, range='1y', interval='1d'){
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=${range}&interval=${interval}`;
+  const url = proxy + `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=${range}&interval=${interval}`;
   return fetchJSON(url);
 }
 
@@ -141,4 +143,19 @@ async function runAnalysis(symbol){
     const finalScore = buildScore(fundPct, techPct, 50); // risk fixed 50%
     let rec="HOLD";
     if(finalScore>=70) rec="STRONG BUY";
-    else if(finalScore>=60)
+    else if(finalScore>=60) rec="BUY";
+    else if(finalScore>=45) rec="HOLD";
+    else rec="SELL/AVOID";
+
+    summaryEl.className="card "+(finalScore>=60?"summary-good":"summary-bad");
+    summaryEl.innerHTML=`<h2>${quote.longName||symbol}</h2>
+    <p>Price: ${lastClose}</p>
+    <p>Score: ${finalScore.toFixed(1)}% → <strong>${rec}</strong></p>
+    <p>P/E: ${pe?pe.toFixed(2):'NA'} | P/B: ${pb?pb.toFixed(2):'NA'}</p>`;
+
+  } catch(err){
+    summaryEl.className="card summary-bad";
+    summaryEl.innerHTML=`<h2>Error</h2><p>${err.message}</p>`;
+    show(summaryEl);
+  }
+}
